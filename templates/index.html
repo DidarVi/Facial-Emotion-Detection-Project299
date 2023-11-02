@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Emotion Prediction System</title>
+    <style>
+        /* Define a style for the predicted emotion display */
+        .predicted-emotion {
+            font-size: 24px;
+            color: white;
+            background-color: black;
+            padding: 3px;
+            border-radius: 10px;
+            display: inline-block;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            width: 30%;
+            height: 40px;
+            text-align: center;
+        }
+
+        .result-box {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            width: 60%;
+            margin: 0 auto;
+        }
+
+        /* Add more styles for other page elements here */
+        /* style.css */
+        body {
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+            text-align: center;
+
+        }
+
+        h1 {
+            background-image: url('/static/img/download.jfif');
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+
+        h1:hover {
+            background-image: url('/static/img/download\ \(1\).jfif');
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+
+        label {
+            background-image: url('/static/img/download\ \(1\).jfif');
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            font-weight: 800;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        form {
+            margin: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-image: url('/static/img/images.jfif');
+            font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif
+        }
+
+        button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+
+        #selected-image {
+            max-width: 100%;
+            display: block;
+            margin: 0 auto;
+            border: 2px solid #4CAF50;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            width: 20%;
+            /* Adjust the width as desired */
+
+            /* Set a default width and height when no image is selected */
+            width: 200px;
+            /* Example width */
+            height: 200px;
+            /* Example height */
+
+            /* Center the alt text both horizontally and vertically */
+            text-align: center;
+
+        }
+
+        img {
+            display: block;
+            margin: 20px auto;
+        }
+
+        video {
+            display: none;
+            margin: 0 auto;
+            border: 5px rgb(230, 13, 49);
+            border-radius: 50%;
+        }
+
+        /* Hide Jinja2 code initially */
+
+        #emotion {
+            font-size: 24px;
+            color: white;
+            background-color: black;
+            padding: 3px;
+            border-radius: 10px;
+            display: inline-block;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            width: 30%;
+            height: 40px;
+            text-align: center;
+        }
+
+        #capturedImage {
+            display: none;
+            border: 5px solid #4CAF50;
+            border-radius: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Emotion Prediction System</h1>
+    <form id="emotion-form" action="http://localhost:5000/predict_emotion" method="post" enctype="multipart/form-data">
+        <label for="Image">Select your image </label><br><br>
+        <input type="file" name="image" accept="image/*" required onchange="displaySelectedImage(this);">
+        <button type="submit">Predict Emotion</button>
+    </form>
+    <!-- Add an image element to display the selected image -->
+    <img id="selected-image" alt="This image will be your given image" />
+    <div id="emotion-result">
+        <p id="predicted-emotion" class="predicted-emotion"></p>
+    </div>
+    <h1>*************************************************************************</h1>
+    <h1>Emotion Prediction Real Time</h1>
+    <button id="startButton">Start Camera</button>
+    <button id="stopButton" disabled>Stop Camera</button>
+    <button id="captureButton" disabled>Capture Photo</button>
+    <video id="video" width="640" height="480" autoplay></video>
+    <button id="predictEmotionButton" disabled>Predict Emotion</button><br><br>
+
+    <!-- Add an image element to display the captured image -->
+    <img id="capturedImage" width="640" height="480" />
+    <p><span id="emotion"></span></p>
+
+    <script>
+        // JavaScript function to display the selected image
+        function displaySelectedImage(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById('selected-image').src = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // JavaScript function to submit the form
+        function submitForm(event) {
+            event.preventDefault();
+            var formData = new FormData(document.getElementById('emotion-form'));
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'http://localhost:5000/predict_emotion', true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    if (xhr.status === 200) {
+                        try {
+                            var response = JSON.parse(xhr.responseText);
+                            if (response && response.predicted_emotion) {
+                                document.getElementById('emotion-result').style.display = 'block';
+                                document.getElementById('predicted-emotion').textContent = 'Predicted Emotion: ' + response.predicted_emotion;
+                            } else {
+                                console.error('No predicted emotion in the response:', response);
+                            }
+                        } catch (e) {
+                            console.error('Error parsing JSON response:', e);
+                        }
+                    } else {
+                        console.error('Error in the request. Status code:', xhr.status);
+                    }
+                }
+            };
+            xhr.send(formData);
+        }
+
+        // Attach the submitForm function to the form's submit event
+        document.getElementById('emotion-form').addEventListener('submit', submitForm);
+
+        // JavaScript for camera capture and prediction
+        document.addEventListener("DOMContentLoaded", function () {
+            var video = document.getElementById('video');
+            var emotionLabel = document.getElementById('emotion');
+            var startButton = document.getElementById('startButton');
+            var stopButton = document.getElementById('stopButton');
+            var captureButton = document.getElementById('captureButton');
+            var capturedImage = document.getElementById('capturedImage');
+            var predictEmotionButton = document.getElementById('predictEmotionButton');
+            var mediaStream = null;
+            var imgData = null;
+
+            startButton.addEventListener('click', function () {
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(function (stream) {
+                        mediaStream = stream;
+                        video.srcObject = stream;
+                        video.style.display = 'block';
+                        startButton.disabled = true;
+                        stopButton.disabled = false;
+                        captureButton.disabled = false;
+                    })
+                    .catch(function (error) {
+                        console.error('Error accessing the webcam:', error);
+                    });
+            });
+
+            stopButton.addEventListener('click', function () {
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach(function (track) {
+                        track.stop();
+                    });
+                    video.srcObject = null;
+                    video.style.display = 'none';
+                    startButton.disabled = false;
+                    stopButton.disabled = true;
+                    captureButton.disabled = true;
+                    emotionLabel.innerText = '';
+                }
+            });
+
+            captureButton.addEventListener('click', function () {
+                // Capture the current frame and display it
+                var canvas = document.createElement('canvas');
+                var context = canvas.getContext('2d');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                imgData = canvas.toDataURL('image/jpeg');
+
+                // Display the captured image
+                capturedImage.src = imgData;
+                capturedImage.style.display = 'block';
+
+                // Enable the Predict Emotion button
+                predictEmotionButton.disabled = false;
+            });
+
+            predictEmotionButton.addEventListener('click', function () {
+                // Send the captured image to the server for emotion prediction
+                var formData = new FormData();
+                formData.append('image', dataURItoBlob(imgData));
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', 'http://localhost:5000/predict_emotion', true);
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === XMLHttpRequest.DONE) {
+                        if (xhr.status === 200) {
+                            try {
+                                var response = JSON.parse(xhr.responseText);
+                                if (response && response.predicted_emotion) {
+                                    emotionLabel.innerText = 'Predicted Emotion: ' + response.predicted_emotion;
+                                } else {
+                                    console.error('No predicted emotion in the response:', response);
+                                }
+                            } catch (e) {
+                                console.error('Error parsing JSON response:', e);
+                            }
+                        } else {
+                            console.error('Error in the request. Status code:', xhr.status);
+                        }
+                    }
+                };
+                xhr.send(formData);
+            });
+
+            // Function to convert Data URI to Blob
+            function dataURItoBlob(dataURI) {
+                var byteString = atob(dataURI.split(',')[1]);
+                var ab = new ArrayBuffer(byteString.length);
+                var ia = new Uint8Array(ab);
+                for (var i = 0; i < byteString.length; i++) {
+                    ia[i] = byteString.charCodeAt(i);
+                }
+                return new Blob([ab], { type: 'image/jpeg' });
+            }
+        });
+    </script>
+</body>
+
+</html>
